@@ -395,8 +395,8 @@
         }
 
         async function loadChatHistory() {
-            const defaultGeneral = [{ author: 'Administrátor', text: 'Vítejte v General chatu! 👋', time: '14:30' }];
-            const defaultStream = [{ author: 'DJ Lucia', text: 'Ahoj všichni, je to skvělý večer! 🎵', time: '14:28' }];
+            const defaultGeneral = [{ author: 'Administrátor', text: 'Vítejte v General chatu! 👋', time: 'XX:XX' }];
+            const defaultStream = [{ author: 'Administrátor', text: 'Tento chat je jako jiný, ale má vyšší prioritu u Dj', time: 'Yo Mama' }];
 
             let generalMessages = await fetchChatFromServer('general');
             let streamMessages = await fetchChatFromServer('stream');
