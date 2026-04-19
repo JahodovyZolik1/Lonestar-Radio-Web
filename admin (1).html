@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Lonestar - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a174e 0%, #ffd600 100%);
+            min-height: 100vh;
+            color: #0a174e;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #0a174e;
+        }
+        .logout-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .panel h2 {
+            color: #0a174e;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ffd600;
+            padding-bottom: 10px;
+        }
+        .stat-box {
+            background: linear-gradient(135deg, #0a174e, #ffd600);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+        }
+        .stream-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #0a174e;
+        }
+        .info-value {
+            color: #ffd600;
+            font-weight: bold;
+        }
+        .user-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid #ffd600;
+        }
+        .user-name {
+            font-weight: bold;
+            color: #0a174e;
+        }
+        .user-points {
+            background: #ffd600;
+            color: #0a174e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .point-action {
+            display: flex;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        .point-action button {
+            background: #ffd600;
+            color: #0a174e;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .chat-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            grid-column: 1 / -1;
+        }
+        .chat-section h2 {
+            color: #0a174e;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ffd600;
+            padding-bottom: 10px;
+        }
+        .chats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .chat-box {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-left: 3px solid #ffd600;
+            border-radius: 4px;
+        }
+        .message-author {
+            font-weight: bold;
+            color: #0a174e;
+            margin-bottom: 4px;
+        }
+        .message-time {
+            font-size: 0.8em;
+            color: #999;
+        }
+        .delete-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .audio-player {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            z-index: 1000;
+        }
+        .audio-player audio {
+            max-width: 300px;
+        }
+        .audio-player button {
+            background: #ffd600;
+            color: #0a174e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .audio-player button:hover {
+            background: #ffed4e;
+        }
+        .audio-player button.stop {
+            background: #d32f2f;
+            color: white;
+        }
+        .audio-player button.stop:hover {
+            background: #f44336;
+        }
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .chats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header" id="headerSection">
+        <h1>⚙️ ADMIN PANEL - LONESTAR RADIO</h1>
+        <div style="display: flex; gap: 10px;">
+            <button class="logout-btn" style="background: #0a174e;" onclick="window.location.href='index.html'">🏠 Domů</button>
+            <button class="logout-btn" onclick="logoutAdmin()">Odhlásit se</button>
+        </div>
+    </div>
+
+    <div class="audio-player">
+        <audio id="audioPlayer" controls crossorigin="anonymous">
+            Váš prohlížeč nepodporuje audio prvek.
+        </audio>
+        <button onclick="playAudio()">▶ Play</button>
+        <button class="stop" onclick="stopAudio()">■ Stop</button>
+    </div>
+
+    <div class="container">
+        <!-- STREAM INFO -->
+        <div class="panel">
+            <h2>📊 Info o Streamu</h2>
+            <div class="stream-info">
+                <div class="info-row">
+                    <span class="info-label">Stav:</span>
+                    <span class="info-value" id="streamStatus">🟢 Online</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Bitrate:</span>
+                    <span class="info-value">320 kbps</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Formát:</span>
+                    <span class="info-value">MP3</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Lístenři:</span>
+                    <span class="info-value" id="listeners">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Uptime:</span>
+                    <span class="info-value" id="uptime">24h 15m</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ONLINE USERS -->
+        <div class="panel">
+            <h2>👥 Uživatelé Online</h2>
+            <div class="stat-box">
+                <div class="stat-number" id="onlineCount">0</div>
+                <div class="stat-label">Přihlášení uživatelé</div>
+            </div>
+        </div>
+
+        <!-- GIVE POINTS -->
+        <div class="panel">
+            <h2>🎁 Dát Body</h2>
+            <div id="userListForPoints" class="user-list">
+                <!-- Dynamicky naplňeno -->
+            </div>
+        </div>
+
+        <!-- ADMIN USERS -->
+        <div class="panel">
+            <h2>👑 Admin Uživatelé</h2>
+            <div class="user-list">
+                <div class="user-item">
+                    <span class="user-name">MichalAtLonestar@gmail.com</span>
+                </div>
+                <div class="user-item">
+                    <span class="user-name">DjJardis@gmail.com</span>
+                </div>
+                <div class="user-item">
+                    <span class="user-name">DjJzolik@gmail.com</span>
+                </div>
+                <div class="user-item">
+                    <span class="user-name">djkubyx@gmail.com</span>
+                </div>
+                <div class="user-item">
+                    <span class="user-name">venca.honzik@gmail.com</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHATS -->
+        <div class="chat-section">
+            <h2>💬 Správa Chatů</h2>
+            <div class="chats-grid">
+                <div class="chat-box">
+                    <h3 style="color: #0a174e; margin-bottom: 10px;">Obecný Chat</h3>
+                    <div class="chat-messages" id="generalChatAdmin">
+                        <div class="message">
+                            <div class="message-author">Administrátor</div>
+                            <div>Vítejte v General chatu! 👋</div>
+                            <div class="message-time">14:30</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-box">
+                    <h3 style="color: #0a174e; margin-bottom: 10px;">Stream Chat</h3>
+                    <div class="chat-messages" id="streamChatAdmin">
+                        <div class="message">
+                            <div class="message-author">DJ Lucia</div>
+                            <div>Ahoj všichni, je to skvělý večer! 🎵</div>
+                            <div class="message-time">14:28</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Kontrola admin přístupu
+        if(localStorage.getItem('isAdmin') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        function playAudio() {
+            const audioUrl = 'https://unfurbelowed-unpressed-nicolasa.ngrok-free.dev/listen/radio_lonestar_%C4%8Desko/radio.mp3';
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.src = audioUrl;
+            audioPlayer.play().catch(err => {
+                console.error('Chyba při přehrávání:', err);
+                alert('Chyba: ' + err.message);
+            });
+            
+            // Nastavit příznak v localStorage aby se spustilo na ostatních stránkách
+            localStorage.setItem('streamActive', 'true');
+            localStorage.setItem('streamUrl', audioUrl);
+            localStorage.setItem('streamPlayTime', new Date().getTime());
+            
+            // Skrýt header
+            document.getElementById('headerSection').style.display = 'none';
+        }
+
+        function stopAudio() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            
+            // Zrušit příznak v localStorage
+            localStorage.setItem('streamActive', 'false');
+            
+            // Zobrazit header
+            document.getElementById('headerSection').style.display = 'flex';
+        }
+
+        function refreshData() {
+            const users = JSON.parse(localStorage.getItem('lonestarUsers')) || [];
+            
+            // Update online count
+            document.getElementById('onlineCount').textContent = users.length;
+            document.getElementById('listeners').textContent = users.length;
+
+            // User list for giving points
+            const userListHtml = users.map(user => `
+                <div class="user-item">
+                    <span class="user-name">${user.email}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="user-points">${user.bodů || 0}</span>
+                        <div class="point-action">
+                            <button onclick="addPoints(${user.id}, 10)">+10</button>
+                            <button onclick="addPoints(${user.id}, 50)">+50</button>
+                            <button onclick="addPoints(${user.id}, 100)">+100</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('userListForPoints').innerHTML = userListHtml;
+        }
+
+        function addPoints(userId, amount) {
+            let users = JSON.parse(localStorage.getItem('lonestarUsers')) || [];
+            users = users.map(u => {
+                if(u.id === userId) {
+                    u.bodů = (u.bodů || 0) + amount;
+                }
+                return u;
+            });
+            localStorage.setItem('lonestarUsers', JSON.stringify(users));
+            refreshData();
+            alert(`Přidáno ${amount} bodů!`);
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('isAdmin');
+            window.location.href = 'login.html';
+        }
+
+        // Initial load
+        refreshData();
+        setInterval(refreshData, 5000); // Refresh každých 5 sekund
+
+        async function fetchChatAndRender(chatId, chatType) {
+            try {
+                const response = await fetch(`http://127.0.0.1:3000/chat/${chatType}`);
+                if (response.ok) {
+                    const messages = await response.json();
+                    renderAdminChat(chatId, messages);
+                } else {
+                    // Fallback to localStorage
+                    const key = chatType === 'general' ? 'lonestar_chat_general' : 'lonestar_chat_stream';
+                    const messages = JSON.parse(localStorage.getItem(key) || '[]');
+                    renderAdminChat(chatId, messages);
+                }
+            } catch (error) {
+                console.error('Chyba načítání chatu:', error);
+                // Fallback to localStorage
+                const key = chatType === 'general' ? 'lonestar_chat_general' : 'lonestar_chat_stream';
+                const messages = JSON.parse(localStorage.getItem(key) || '[]');
+                renderAdminChat(chatId, messages);
+            }
+        }
+
+        function renderAdminChat(chatId, messages) {
+            const chatDiv = document.getElementById(chatId);
+            chatDiv.innerHTML = messages.map(msg => `
+                <div class="message">
+                    <div class="message-author">${msg.author}</div>
+                    <div>${msg.text}</div>
+                    <div class="message-time">${msg.time}</div>
+                    <button class="delete-btn" onclick="deleteMessage('${chatId}', '${msg.time}')">×</button>
+                </div>
+            `).join('');
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        async function deleteMessage(chatId, time) {
+            const chatType = chatId === 'generalChatAdmin' ? 'general' : 'stream';
+            try {
+                const response = await fetch(`http://127.0.0.1:3000/chat/${chatType}/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ time })
+                });
+                if (response.ok) {
+                    // Reload the chat
+                    fetchChatAndRender(chatId, chatType);
+                    return;
+                }
+            } catch (error) {
+                console.error('Server delete failed, trying localStorage:', error);
+            }
+            
+            // Fallback: delete from localStorage
+            const key = chatType === 'general' ? 'lonestar_chat_general' : 'lonestar_chat_stream';
+            let messages = JSON.parse(localStorage.getItem(key) || '[]');
+            messages = messages.filter(msg => msg.time !== time);
+            localStorage.setItem(key, JSON.stringify(messages));
+            renderAdminChat(chatId, messages);
+        }
+
+        // Načíst chaty při startu a pak každých 2.5 sekundy
+        function loadAdminChats() {
+            fetchChatAndRender('generalChatAdmin', 'general');
+            fetchChatAndRender('streamChatAdmin', 'stream');
+        }
+
+        loadAdminChats();
+        setInterval(loadAdminChats, 2500);
+    </script>
+</body>
+</html>
