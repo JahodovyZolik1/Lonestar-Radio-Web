@@ -1,0 +1,98 @@
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const CHAT_FILE = path.join(__dirname, 'chat-storage.json');
+const PORT = 3000;
+
+function initStorage() {
+    if (!fs.existsSync(CHAT_FILE)) {
+        const initial = { general: [], stream: [] };
+        fs.writeFileSync(CHAT_FILE, JSON.stringify(initial, null, 2), 'utf8');
+    }
+}
+
+function readStorage() {
+    try {
+        return JSON.parse(fs.readFileSync(CHAT_FILE, 'utf8'));
+    } catch (err) {
+        console.error('Chyba čtení chat-storage.json:', err);
+        return { general: [], stream: [] };
+    }
+}
+
+function writeStorage(data) {
+    fs.writeFileSync(CHAT_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function sendResponse(res, status, data) {
+    const json = JSON.stringify(data);
+    res.writeHead(status, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    });
+    res.end(json);
+}
+
+function handleChat(req, res, chatType) {
+    if (req.method === 'OPTIONS') {
+        sendResponse(res, 200, { ok: true });
+        return;
+    }
+
+    const storage = readStorage();
+    if (req.method === 'GET') {
+        sendResponse(res, 200, storage[chatType] || []);
+        return;
+    }
+
+    if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            try {
+                const message = JSON.parse(body);
+                if (!message.text || !message.author || !message.time) {
+                    sendResponse(res, 400, { error: 'Chybějící data' });
+                    return;
+                }
+                const messages = storage[chatType] || [];
+                messages.push({ author: message.author, text: message.text, time: message.time });
+                storage[chatType] = messages;
+                writeStorage(storage);
+                sendResponse(res, 200, messages);
+            } catch (err) {
+                console.error('Chyba parsování zprávy:', err);
+                sendResponse(res, 400, { error: 'Neplatná zpráva' });
+            }
+        });
+        return;
+    }
+
+    sendResponse(res, 405, { error: 'Metoda není podporována' });
+}
+
+initStorage();
+
+const server = http.createServer((req, res) => {
+    const url = req.url;
+    if (url === '/chat/general') {
+        return handleChat(req, res, 'general');
+    }
+    if (url === '/chat/stream') {
+        return handleChat(req, res, 'stream');
+    }
+    if (url === '/' || url === '/status') {
+        sendResponse(res, 200, { ok: true, server: 'Lonestar chat backend', port: PORT });
+        return;
+    }
+    sendResponse(res, 404, { error: 'Nenalezeno' });
+});
+
+server.listen(PORT, () => {
+    console.log(`Lonestar chat backend listening on http://127.0.0.1:${PORT}`);
+});
