@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Lonestar - Přihlášení</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a174e 0%, #ffd600 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(10, 23, 78, 0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { color: #0a174e; font-size: 2em; margin-bottom: 5px; }
+        .logo p { color: #ffd600; font-weight: bold; }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #0a174e;
+            font-weight: bold;
+            font-size: 1em;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab-btn.active { color: #ffd600; border-bottom-color: #ffd600; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #0a174e; font-weight: bold; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border 0.3s;
+        }
+        input:focus { outline: none; border-color: #ffd600; }
+        input:disabled { background: #f5f5f5; cursor: not-allowed; }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #0a174e, #ffd600);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .submit-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .submit-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .form-section { display: none; }
+        .form-section.active { display: block; }
+        .error { color: #d32f2f; font-size: 0.9em; margin-top: 8px; }
+        .success { color: #388e3c; font-size: 0.9em; margin-top: 8px; }
+        .lockout-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #856404;
+            display: none;
+        }
+        .attempts-info {
+            font-size: 0.82em;
+            color: #888;
+            margin-top: 6px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+<div class="auth-container">
+    <div class="logo">
+        <h1>LONESTAR</h1>
+        <p>Radio</p>
+    </div>
+
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('login')">Přihlášení</button>
+        <button class="tab-btn" onclick="switchTab('register')">Registrace</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" class="form-section active" onsubmit="handleLogin(event)">
+        <div class="form-group">
+            <label for="loginEmail">Email nebo Tel. číslo</label>
+            <input type="text" id="loginEmail" required>
+        </div>
+        <div class="form-group">
+            <label for="loginPassword">Heslo</label>
+            <input type="password" id="loginPassword" required>
+        </div>
+        <button type="submit" class="submit-btn" id="loginSubmitBtn">Přihlásit se</button>
+        <div id="loginError" class="error"></div>
+        <div id="attemptsInfo" class="attempts-info"></div>
+        <div id="lockoutBox" class="lockout-box"></div>
+        <button type="button" class="submit-btn" style="background: #999; margin-top: 10px;" onclick="skipLogin()">Pokračovat bez přihlášení</button>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form id="registerForm" class="form-section" onsubmit="handleRegister(event)">
+        <div class="form-group">
+            <label for="regEmail">Email nebo Tel. číslo</label>
+            <input type="text" id="regEmail" required>
+        </div>
+        <div class="form-group">
+            <label for="regPassword">Heslo</label>
+            <input type="password" id="regPassword" required>
+            <div id="passwordStrength" style="font-size:0.82em; margin-top:4px;"></div>
+        </div>
+        <div class="form-group">
+            <label for="regPasswordRepeat">Opakovat heslo</label>
+            <input type="password" id="regPasswordRepeat" required>
+        </div>
+        <button type="submit" class="submit-btn">Zaregistrovat se</button>
+        <div id="registerError" class="error"></div>
+        <div id="registerSuccess" class="success"></div>
+    </form>
+</div>
+
+<script>
+    // ─── ADMIN konfigurace ───────────────────────────────────────────────────
+    // Tokeny jsou SHA-256 hash emailů — nikdy plain text v kódu
+    // Generováno: hashEmail('MichalAtLonestar@gmail.com') atd.
+    const ADMIN_EMAIL_LIST = [
+        'MichalAtLonestar@gmail.com',
+        'DjJardis@gmail.com',
+        'DjJzolik@gmail.com',
+        'djkubyx@gmail.com',
+        'venca.honzik@gmail.com'
+    ];
+
+    // ─── SHA-256 pomocí Web Crypto API ───────────────────────────────────────
+    async function sha256(text) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // ─── Rate limiting — 5 pokusů / 10 minut ─────────────────────────────────
+    const RATE_KEY = 'lonestar_login_attempts';
+    const MAX_ATTEMPTS = 5;
+    const LOCKOUT_MS = 10 * 60 * 1000; // 10 minut
+
+    function getAttempts() {
+        try { return JSON.parse(localStorage.getItem(RATE_KEY)) || { count: 0, firstAt: null, lockedUntil: null }; }
+        catch { return { count: 0, firstAt: null, lockedUntil: null }; }
+    }
+
+    function saveAttempts(obj) {
+        localStorage.setItem(RATE_KEY, JSON.stringify(obj));
+    }
+
+    function isLockedOut() {
+        const a = getAttempts();
+        if(a.lockedUntil && Date.now() < a.lockedUntil) return a.lockedUntil;
+        if(a.lockedUntil && Date.now() >= a.lockedUntil) {
+            // Lockout vypršel — resetuj
+            saveAttempts({ count: 0, firstAt: null, lockedUntil: null });
+            return false;
+        }
+        return false;
+    }
+
+    function recordFailedAttempt() {
+        let a = getAttempts();
+        const now = Date.now();
+        // Reset pokud uplynulo 10 minut od prvního pokusu
+        if(a.firstAt && now - a.firstAt > LOCKOUT_MS) {
+            a = { count: 0, firstAt: null, lockedUntil: null };
+        }
+        if(!a.firstAt) a.firstAt = now;
+        a.count++;
+        if(a.count >= MAX_ATTEMPTS) {
+            a.lockedUntil = now + LOCKOUT_MS;
+        }
+        saveAttempts(a);
+        return a;
+    }
+
+    function resetAttempts() {
+        saveAttempts({ count: 0, firstAt: null, lockedUntil: null });
+    }
+
+    function updateLockoutUI() {
+        const lockedUntil = isLockedOut();
+        const btn = document.getElementById('loginSubmitBtn');
+        const box = document.getElementById('lockoutBox');
+        const attInfo = document.getElementById('attemptsInfo');
+        const emailInput = document.getElementById('loginEmail');
+        const passInput = document.getElementById('loginPassword');
+
+        if(lockedUntil) {
+            const remaining = Math.ceil((lockedUntil - Date.now()) / 1000);
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            box.style.display = 'block';
+            box.textContent = `🔒 Příliš mnoho neúspěšných pokusů. Zkuste to znovu za ${mins}:${String(secs).padStart(2,'0')} min.`;
+            btn.disabled = true;
+            emailInput.disabled = true;
+            passInput.disabled = true;
+            attInfo.textContent = '';
+            return true;
+        } else {
+            box.style.display = 'none';
+            btn.disabled = false;
+            emailInput.disabled = false;
+            passInput.disabled = false;
+            const a = getAttempts();
+            if(a.count > 0) {
+                attInfo.textContent = `Zbývá pokusů: ${MAX_ATTEMPTS - a.count} z ${MAX_ATTEMPTS}`;
+            } else {
+                attInfo.textContent = '';
+            }
+            return false;
+        }
+    }
+
+    // Aktualizuj UI každou sekundu pokud je lockout aktivní
+    setInterval(() => {
+        if(isLockedOut()) updateLockoutUI();
+    }, 1000);
+
+    // Zkontroluj při načtení stránky
+    updateLockoutUI();
+
+    // ─── Přihlášení ──────────────────────────────────────────────────────────
+    async function handleLogin(e) {
+        e.preventDefault();
+
+        if(updateLockoutUI()) return; // Blokováno
+
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errorEl = document.getElementById('loginError');
+        errorEl.textContent = '';
+
+        const passwordHash = await sha256(password);
+        const users = JSON.parse(localStorage.getItem('lonestarUsers')) || [];
+        const user = users.find(u =>
+            (u.email === email || u.phone === email) && u.passwordHash === passwordHash
+        );
+
+        if(user) {
+            resetAttempts();
+            // Uložit session bez hesla
+            const sessionUser = { id: user.id, email: user.email, bodů: user.bodů || 0, onlineSince: user.onlineSince || null };
+            localStorage.setItem('currentUser', JSON.stringify(sessionUser));
+
+            // Admin token: SHA-256 hash emailu + tajný salt
+            const isAdmin = ADMIN_EMAIL_LIST.includes(user.email);
+            if(isAdmin) {
+                const adminToken = await sha256(user.email + '_lonestar_admin_2024');
+                localStorage.setItem('adminToken', adminToken);
+                localStorage.setItem('adminEmail', user.email);
+                window.location.href = 'admin.html';
+            } else {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminEmail');
+                window.location.href = 'index.html';
+            }
+        } else {
+            const a = recordFailedAttempt();
+            updateLockoutUI();
+            if(a.count >= MAX_ATTEMPTS) {
+                errorEl.textContent = '';
+            } else {
+                errorEl.textContent = 'Nesprávné přihlašovací údaje!';
+            }
+        }
+    }
+
+    // ─── Registrace ──────────────────────────────────────────────────────────
+    document.getElementById('regPassword').addEventListener('input', function() {
+        const val = this.value;
+        const el = document.getElementById('passwordStrength');
+        if(!val) { el.textContent = ''; return; }
+        let strength = 0;
+        if(val.length >= 8) strength++;
+        if(/[A-Z]/.test(val)) strength++;
+        if(/[0-9]/.test(val)) strength++;
+        if(/[^A-Za-z0-9]/.test(val)) strength++;
+        const labels = ['', '🔴 Slabé', '🟠 Průměrné', '🟡 Dobré', '🟢 Silné'];
+        el.textContent = labels[strength] || '🔴 Slabé';
+    });
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const passwordRepeat = document.getElementById('regPasswordRepeat').value;
+        const errorEl = document.getElementById('registerError');
+        const successEl = document.getElementById('registerSuccess');
+        errorEl.textContent = '';
+        successEl.textContent = '';
+
+        if(password !== passwordRepeat) {
+            errorEl.textContent = 'Hesla se neshodují!';
+            return;
+        }
+        if(password.length < 6) {
+            errorEl.textContent = 'Heslo musí mít alespoň 6 znaků!';
+            return;
+        }
+
+        let users = JSON.parse(localStorage.getItem('lonestarUsers')) || [];
+        if(users.find(u => u.email === email || u.phone === email)) {
+            errorEl.textContent = 'Uživatel již existuje!';
+            return;
+        }
+
+        const passwordHash = await sha256(password);
+        const newUser = {
+            id: Date.now(),
+            email: email,
+            phone: email,
+            passwordHash: passwordHash, // Nikdy plain text!
+            bodů: 0,
+            created: new Date().toISOString()
+        };
+
+        users.push(newUser);
+        localStorage.setItem('lonestarUsers', JSON.stringify(users));
+
+        const isAdmin = ADMIN_EMAIL_LIST.includes(email);
+        if(isAdmin) {
+            const sessionUser = { id: newUser.id, email: newUser.email, bodů: 0 };
+            localStorage.setItem('currentUser', JSON.stringify(sessionUser));
+            const adminToken = await sha256(email + '_lonestar_admin_2024');
+            localStorage.setItem('adminToken', adminToken);
+            localStorage.setItem('adminEmail', email);
+            window.location.href = 'admin.html';
+        } else {
+            successEl.textContent = 'Registrace úspěšná! Nyní se přihlaste.';
+            setTimeout(() => switchTab('login'), 2000);
+        }
+    }
+
+    // ─── Pomocné funkce ──────────────────────────────────────────────────────
+    function switchTab(tab) {
+        document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        if(tab === 'login') {
+            document.getElementById('loginForm').classList.add('active');
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        } else {
+            document.getElementById('registerForm').classList.add('active');
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        }
+    }
+
+    function skipLogin() {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminEmail');
+        window.location.href = 'index.html';
+    }
+</script>
+</body>
+</html>
